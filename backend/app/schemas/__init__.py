@@ -162,10 +162,8 @@ class ModelCompareOut(BaseModel):
 
 class PredictRequest(BaseModel):
     symbol: str
-    model_id: Optional[int] = None
     as_of_date: Optional[date] = None
     prediction_horizon: int = Field(default=1, ge=1, le=5)
-    auto_select: bool = True
 
 
 class ShapContribution(BaseModel):
@@ -176,8 +174,6 @@ class ShapContribution(BaseModel):
 
 class PredictionOut(BaseModel):
     id: int
-    model_id: int
-    model_algorithm: Optional[str] = None
     symbol: str
     as_of_date: date
     label: str
@@ -185,11 +181,6 @@ class PredictionOut(BaseModel):
     confidence: float
     prediction_horizon: int = 1
     summary_text: Optional[str] = None
-    narrative: Optional[str] = None
-    top_features: list[ShapContribution] = Field(default_factory=list)
-    positive_contributions: list[ShapContribution] = Field(default_factory=list)
-    negative_contributions: list[ShapContribution] = Field(default_factory=list)
-    waterfall: list[ShapContribution] = Field(default_factory=list)
 
 
 class ExplainOut(BaseModel):

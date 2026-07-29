@@ -5,19 +5,10 @@ import { ToastProvider } from './components/ux'
 import { LandingPage } from './pages/LandingPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { DataExplorerPage } from './pages/DataExplorerPage'
-import { TrainingPage } from './pages/TrainingPage'
-import { ModelComparisonPage } from './pages/ModelComparisonPage'
-import { PredictionPage } from './pages/PredictionPage'
-import { ExplainabilityPage } from './pages/ExplainabilityPage'
-import { InsightsPage } from './pages/InsightsPage'
-import { ExperimentsPage } from './pages/ExperimentsPage'
-import { BacktestPage } from './pages/BacktestPage'
-import { ReportPage } from './pages/ReportPage'
+import { AboutPage } from './pages/AboutPage'
 
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 15_000, retry: 1 },
-  },
+  defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
 })
 
 export default function App() {
@@ -27,18 +18,11 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/welcome" element={<LandingPage />} />
             <Route path="/app" element={<AppLayout />}>
               <Route index element={<DashboardPage />} />
-              <Route path="data" element={<DataExplorerPage />} />
-              <Route path="training" element={<TrainingPage />} />
-              <Route path="models" element={<ModelComparisonPage />} />
-              <Route path="predict" element={<PredictionPage />} />
-              <Route path="explain" element={<ExplainabilityPage />} />
-              <Route path="insights" element={<InsightsPage />} />
-              <Route path="experiments" element={<ExperimentsPage />} />
-              <Route path="backtest" element={<BacktestPage />} />
-              <Route path="report" element={<ReportPage />} />
+              <Route path="market" element={<DataExplorerPage />} />
+              <Route path="about" element={<AboutPage />} />
+              <Route path="*" element={<Navigate to="/app" replace />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

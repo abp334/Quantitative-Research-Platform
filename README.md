@@ -1,8 +1,10 @@
-# Nexus Quant — Explainable Quantitative Research Platform
+# Nexus — AI Stock Outlook
 
-Enterprise-grade classical ML research system for NIFTY-50 equities.
+A user-facing stock intelligence application for NIFTY equities. Users select a stock and
+forecast horizon, review its historical price behaviour, and receive a directional outlook.
 
-**Not a stock tip app.** Predictions are always paired with walk-forward metrics and SHAP explanations.
+The analytical pipeline is fully managed by the backend. The public product does not expose
+model training, algorithm selection, feature engineering, experiments, or model comparisons.
 
 ## Quick start
 
@@ -11,36 +13,27 @@ docker compose up --build
 ```
 
 | Surface | URL |
-|---------|-----|
-| Landing | http://localhost:3000 |
-| Research console | http://localhost:3000/app |
-| API docs | http://localhost:8000/docs |
+|---|---|
+| Web application | http://localhost:3000 |
+| Public API | http://localhost:8000/docs |
 
 ## User flow
 
-Landing → Dashboard → Data Explorer → Train → Compare → Predict → Explain → Insights → Experiments → Backtest → PDF Report
+Open app → Select stock → Review price history → Choose horizon → Generate outlook
 
-The dataset auto-imports on first API boot if the database is empty. Users never upload CSVs.
+## Public capabilities
 
-## Stack
+- Browse the available NIFTY stock universe
+- Explore candlestick, volume, moving-average, and momentum charts
+- Request a 1, 3, or 5-session directional outlook
+- View upside probability and signal confidence
 
-FastAPI · PostgreSQL · Scikit-Learn · XGBoost · Optuna · SHAP · React · Recharts · ReportLab · Docker
+## Managed backend
 
-## Horizons
-
-Train/predict for horizons `{1, 3, 5}` trading days. Target = `Close[t+h] > Close[t]`.
-
-## Tests
-
-```bash
-cd backend && source .venv/bin/activate && PYTHONPATH=. pytest -q
-```
-
-## Docs
-
-- [Architecture](docs/ARCHITECTURE.md)
-- [API](docs/API.md)
+Historical data ingestion, feature preparation, model evaluation/selection, inference, and
+explanation generation remain internal. The prediction service automatically chooses the
+strongest active model for the requested horizon.
 
 ## Disclaimer
 
-Research software only. Not investment advice.
+Research software only. Predictions are probabilistic and are not investment advice.

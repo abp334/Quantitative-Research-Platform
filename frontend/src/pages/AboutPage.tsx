@@ -1,30 +1,12 @@
+import { AlertTriangle, BarChart3, LockKeyhole, Sparkles } from 'lucide-react'
 import { Card } from '../components/ui'
 
 export function AboutPage() {
-  return (
-    <div className="space-y-6 max-w-3xl">
-      <Card title="Nexus Quant" subtitle="AI-Powered Quantitative Stock Research Platform">
-        <div className="space-y-4 text-sm leading-relaxed text-[var(--color-muted)]">
-          <p>
-            Nexus Quant is an explainable machine learning platform for next-day directional
-            prediction on the NIFTY-50 universe (Rohan Rao Kaggle dataset, 2000–2021 daily OHLCV).
-          </p>
-          <p>
-            The stack emphasizes feature engineering, walk-forward validation, Optuna
-            hyperparameter search, model comparison, and SHAP-based explainability — not LSTM
-            black boxes.
-          </p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Backend: FastAPI · SQLAlchemy · Alembic · PostgreSQL</li>
-            <li>ML: Scikit-Learn · XGBoost · Optuna · SHAP</li>
-            <li>Frontend: React · TypeScript · Tailwind · Recharts · TanStack Query</li>
-            <li>Infra: Docker Compose</li>
-          </ul>
-          <p className="text-xs">
-            Research tool only. Not investment advice. Past patterns do not guarantee future results.
-          </p>
-        </div>
-      </Card>
+  return <div className="max-w-4xl space-y-6">
+    <div><p className="eyebrow w-fit">About Nexus</p><h1 className="display text-4xl font-bold mt-4">Stock intelligence without the complexity</h1><p className="text-[var(--color-muted)] mt-3 leading-relaxed">Nexus turns historical NIFTY market data into an accessible short-term directional outlook. You choose the stock and horizon; the analytical system handles the rest.</p></div>
+    <div className="grid md:grid-cols-3 gap-4">
+      {[[BarChart3,'Market-first','Every visible chart and metric describes the stock—not the machinery behind it.'],[Sparkles,'Simple by design','There are no training controls, algorithms to select, or experiments to manage.'],[LockKeyhole,'Managed analysis','Data preparation and prediction happen privately inside the service.']].map(([I,t,d]) => { const Icon=I as typeof BarChart3; return <Card key={String(t)}><Icon className="h-6 w-6 text-[var(--color-accent)]"/><h2 className="display text-lg font-semibold mt-4">{String(t)}</h2><p className="text-sm text-[var(--color-muted)] mt-2 leading-relaxed">{String(d)}</p></Card>})}
     </div>
-  )
+    <Card><div className="flex gap-3"><AlertTriangle className="h-5 w-5 text-[var(--color-warning)] shrink-0"/><div><h2 className="font-semibold">Important limitation</h2><p className="text-sm text-[var(--color-muted)] mt-1 leading-relaxed">Predictions are probabilities, not promises. Historical patterns can fail when market conditions change. Nexus does not provide investment advice, price targets, or execute trades.</p></div></div></Card>
+  </div>
 }
