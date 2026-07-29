@@ -36,6 +36,8 @@ export const api = {
     if (params?.end) q.set('end', params.end)
     return request(`/data/stocks/${symbol}/stats${q.size ? `?${q}` : ''}`)
   },
-  predict: (body: { symbol: string; prediction_horizon?: number }) =>
-    request('/predict', { method: 'POST', body: JSON.stringify(body) }),
+  forecast: (body: { symbol: string; horizon_days: number }) =>
+    request('/forecast', { method: 'POST', body: JSON.stringify(body) }),
+  scanner: (horizon = 5, limit = 50) =>
+    request(`/market/scanner?horizon=${horizon}&limit=${limit}`),
 }

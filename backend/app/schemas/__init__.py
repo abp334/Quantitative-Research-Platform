@@ -183,6 +183,96 @@ class PredictionOut(BaseModel):
     summary_text: Optional[str] = None
 
 
+class ForecastRequest(BaseModel):
+    symbol: str
+    horizon_days: int = Field(default=10)
+
+
+class ForecastPointOut(BaseModel):
+    day: int
+    date: date
+    predicted_price: float
+    lower_price: float
+    upper_price: float
+    predicted_return: float
+
+
+class ForecastScenarioOut(BaseModel):
+    label: str
+    price: float
+    return_: float = Field(alias="return")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class MarketFactorOut(BaseModel):
+    name: str
+    state: str
+    score: float
+    description: str
+
+
+class MarketContextOut(BaseModel):
+    regime: str
+    risk_level: str
+    annualized_volatility: float
+    support: float
+    resistance: float
+    rsi: float
+    volume_ratio: float
+
+
+class ValidationPointOut(BaseModel):
+    date: date
+    predicted_return: float
+    actual_return: float
+    direction_correct: bool
+
+
+class ForecastValidationOut(BaseModel):
+    direction_accuracy: float
+    mae_percent: float
+    rmse_percent: float
+    interval_coverage: float
+    validation_samples: int
+    recent: list[ValidationPointOut] = Field(default_factory=list)
+
+
+class ForecastOut(BaseModel):
+    symbol: str
+    company_name: Optional[str] = None
+    industry: Optional[str] = None
+    as_of_date: date
+    current_price: float
+    horizon_days: int
+    bias: str
+    probability_up: float
+    confidence: float
+    expected_return: float
+    target_price: float
+    expected_low: float
+    expected_high: float
+    forecast_points: list[ForecastPointOut]
+    scenarios: dict[str, ForecastScenarioOut]
+    market_context: MarketContextOut
+    factors: list[MarketFactorOut]
+    narrative: str
+    validation: ForecastValidationOut
+
+
+class ScannerItemOut(BaseModel):
+    symbol: str
+    company_name: Optional[str] = None
+    industry: Optional[str] = None
+    as_of_date: date
+    last_price: float
+    expected_return: float
+    probability_up: float
+    validation_accuracy: float
+    volatility: float
+    score: float
+
+
 class ExplainOut(BaseModel):
     prediction_id: int
     symbol: str

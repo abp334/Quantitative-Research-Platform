@@ -1,36 +1,44 @@
-# API Reference
+# Public API
 
 Base path: `/api/v1`
 
-## Core
+The public contract contains only stock data and market-outcome forecasts. Model, training,
+feature-generation, experiment, and explanation endpoints are intentionally not registered.
+
+## Health and market data
 
 - `GET /health`
-- `GET /dashboard/stats` — enriched KPIs, best model, activity, system status
-
-## Data
-
-- `POST /data/import` — ops/auto-import (hidden from primary UX)
 - `GET /data/stocks`
+- `GET /data/stocks/{symbol}`
 - `GET /data/stocks/{symbol}/ohlcv?start=&end=&limit=`
-- `GET /data/stocks/{symbol}/stats`
+- `GET /data/stocks/{symbol}/stats?start=&end=`
 
-## Features / Training
+## AI forecast
 
-- `POST /features/generate` — `{ symbols, prediction_horizon }`
-- `POST /train` — `{ symbols, algorithms, optuna_trials, prediction_horizon }`
-- `GET /train/jobs`, `GET /train/jobs/{id}` — includes `progress_detail`
-- `GET /experiments`, `GET /experiments/{id}`
+`POST /forecast`
 
-## Models / Prediction
+```json
+{
+  "symbol": "RELIANCE",
+  "horizon_days": 10
+}
+```
 
-- `GET /models`, `GET /models/compare` — ranked + NL explanation
-- `POST /predict` — `{ symbol, prediction_horizon, auto_select, model_id }`
-- `GET /explain/{prediction_id}`
+Supported horizons are `5`, `10`, and `20` trading sessions. The response includes:
 
-## Research
+- current and target price
+- expected return and upside probability
+- daily forecast path with lower/upper expected bounds
+- bear/base/bull scenarios
+- support, resistance, volatility, RSI, volume, risk, and market regime
+- plain-language price/volume factors
+- chronologically held-out validation metrics and recent outcomes
 
-- `GET /insights`
-- `POST /backtest`
-- `GET /reports/research.pdf`
+## AI market scanner
 
-Interactive docs: `/docs`
+`GET /market/scanner?horizon=5&limit=50`
+
+Returns a cached, ranked cross-section with expected return, upside probability, historical
+direction accuracy, volatility, and a composite forecast score.
+
+Interactive documentation is available at `/docs`.

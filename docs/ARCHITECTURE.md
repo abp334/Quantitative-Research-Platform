@@ -1,61 +1,52 @@
 # Architecture
 
-## Overview
+## Product flow
 
-Nexus Quant is a modular monorepo for quantitative equity research on NIFTY-50 daily OHLCV data.
-
-```
-CSV archive → ETL → PostgreSQL → Feature Engineering → Walk-Forward Training
-                                                              ↓
-UI (React) ← FastAPI ← Joblib artifacts + SHAP ← Optuna-tuned models
+```text
+Bundled OHLCV → PostgreSQL → Stationary market features → Managed forecast engine
+                                                             ↓
+React UI ← public-safe forecast, scenario, risk, scanner, and validation payloads
 ```
 
-## Backend layers
+The web application is market-first. Users never configure algorithms, generate features, or
+run training jobs.
 
-| Layer | Responsibility |
-|-------|----------------|
-| `api/v1` | HTTP routers, validation, background job dispatch |
-| `schemas` | Pydantic request/response models |
-| `services` | Business orchestration (ETL, features, training, prediction) |
-| `repositories` | SQLAlchemy data access |
-| `models` | ORM entities |
-| `ml/features` | Manual indicators (no TA-Lib) |
-| `ml/training` | Model factories + Optuna spaces |
-| `ml/evaluation` | Expanding walk-forward splits & metrics |
-| `ml/explainability` | SHAP local/global explanations |
+## Forecast engine
 
-## Target definition
+For each stock, `forecast_service.py` builds stationary features from returns, moving-average
+distance, volatility, RSI, MACD, ATR, Bollinger position, volume, drawdown, gaps, and daily
+range. It learns direct cumulative returns for every future step in the selected 5, 10, or
+20-session horizon.
 
-For bar `t`:
+A private regression ensemble provides diverse estimates. Recent history is divided
+chronologically into:
 
-```
-target = 1 if Close[t+1] > Close[t] else 0
-```
+1. training
+2. purged calibration
+3. purged final validation
 
-Features at `t` use only information available at `t` (lags, rolling windows). The label uses the next close and is never fed into features.
+The purge equals the requested forecast horizon so future labels from one window cannot
+overlap the next. Calibration errors determine ensemble weights and expected price bands.
+The final untouched window supplies direction accuracy, MAE, RMSE, interval coverage, and the
+predicted-versus-actual series shown in Forecast Track Record.
 
-## Validation
+The scanner uses a faster regularised regression pass over every available stock and caches
+rankings for five minutes.
 
-Time-series data is never randomly shuffled. Expanding-window walk-forward:
+## Public versus internal
 
-- Minimum train ≈ 3 years (756 sessions)
-- Test fold ≈ 6 months (126 sessions)
-- Step ≈ 6 months
+The API router registers only health, read-only stock data, forecast, and scanner routes.
+Legacy ingestion, feature, classifier-training, and research modules remain available for
+private maintenance but are not public product capabilities.
 
 ## Containers
 
-`docker compose` runs:
+`docker compose up --build` runs PostgreSQL, FastAPI, and the Nginx-served React application.
+The archive is mounted read-only. On an empty database, startup imports the bundled data.
 
-1. `db` — Postgres 16 with persistent `pgdata` volume  
-2. `api` — FastAPI; migrates via Alembic on boot; mounts `archive/` read-only and `modeldata` for artifacts  
-3. `frontend` — Nginx serving the Vite build and proxying `/api` to the API  
+## Data limitation
 
-## Configuration
-
-Environment variables (see `backend/app/core/config.py`):
-
-- `DATABASE_URL` / `DATABASE_URL_SYNC`
-- `DATA_DIR`, `MODELS_DIR`
-- `OPTUNA_TRIALS`
-- `CORS_ORIGINS`
-- `DEFAULT_TRAIN_SYMBOLS`
+The archive contains daily data through 30 April 2021. Every forecast response carries an
+`as_of_date`, and the UI explicitly labels projections as historical-data forecasts. A
+maintained market-data ingestion source is required before using the experience as a
+current-market forecast.

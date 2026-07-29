@@ -22,13 +22,13 @@ export function LandingPage() {
               See what a stock’s history <span className="text-gradient">suggests comes next.</span>
             </h1>
             <p className="text-lg md:text-xl text-[var(--color-muted)] max-w-2xl mx-auto mt-7 leading-relaxed">
-              Explore NIFTY stocks, study their price behaviour, and generate a clear AI-powered directional outlook in seconds.
+              Explore NIFTY stocks and generate a complete AI price path, expected range, return estimate and historical reliability check.
             </p>
             <div className="mt-9 flex justify-center">
               <Link to="/app" className="hero-button">Explore stock outlooks <ArrowRight className="h-4 w-4" /></Link>
             </div>
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-7 text-xs text-[var(--color-muted)]">
-              {['No model setup', 'No training screens', 'Stock-focused insights'].map((x) => <span key={x} className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-[var(--color-accent)]" />{x}</span>)}
+              {['Multi-session price paths', 'AI market scanner', 'Visible forecast track record'].map((x) => <span key={x} className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-[var(--color-accent)]" />{x}</span>)}
             </div>
           </motion.div>
 
@@ -38,9 +38,9 @@ export function LandingPage() {
               <span className="text-[var(--color-accent)] bg-[rgba(61,222,168,.1)] rounded-lg px-3 py-1.5 text-xs">Positive bias</span>
             </div>
             <div className="grid md:grid-cols-3 gap-4 mt-5">
-              <div className="landing-metric"><span>Upside probability</span><strong>68%</strong></div>
-              <div className="landing-metric"><span>Outlook window</span><strong>5 days</strong></div>
-              <div className="landing-metric"><span>Signal</span><strong className="text-[var(--color-accent)]">Constructive</strong></div>
+              <div className="landing-metric"><span>Base estimate</span><strong>₹2,084</strong></div>
+              <div className="landing-metric"><span>Expected range</span><strong className="!text-lg">₹1,970–₹2,170</strong></div>
+              <div className="landing-metric"><span>Market regime</span><strong className="text-[var(--color-accent)] !text-lg">Bullish trend</strong></div>
             </div>
             <div className="h-28 mt-5 flex items-end gap-1.5 px-2">
               {[26,34,29,42,38,50,47,56,52,65,59,70,66,78,74,88].map((h,i) => <span key={i} className="flex-1 rounded-t bg-gradient-to-t from-[rgba(61,222,168,.15)] to-[rgba(61,222,168,.7)]" style={{height:`${h}%`}} />)}
@@ -52,8 +52,8 @@ export function LandingPage() {
           <div className="max-w-7xl mx-auto px-6 md:px-10 py-20 grid md:grid-cols-3 gap-6">
             {[
               [BarChart3, 'Understand the past', 'Interactive price, volume, volatility and momentum charts keep the focus on the stock.'],
-              [BrainCircuit, 'Get a simple outlook', 'Select a horizon and receive a directional probability—without configuring or training anything.'],
-              [TrendingUp, 'Make informed decisions', 'Use the outlook as one input alongside your own research and risk tolerance.'],
+              [BrainCircuit, 'Forecast price and risk', 'Get a daily price path, range, bull/base/bear scenarios, market regime and confidence assessment.'],
+              [TrendingUp, 'Scan and verify', 'Rank the stock universe, then inspect held-out historical results before trusting any forecast.'],
             ].map(([Icon, title, body]) => {
               const I = Icon as typeof BarChart3
               return <div key={String(title)} className="feature-card"><I className="h-6 w-6 text-[var(--color-accent)]" /><h3 className="display text-xl font-semibold mt-5">{String(title)}</h3><p className="text-sm text-[var(--color-muted)] mt-2 leading-relaxed">{String(body)}</p></div>

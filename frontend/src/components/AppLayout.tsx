@@ -1,12 +1,13 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { BarChart3, CircleHelp, LayoutDashboard, Sparkles } from 'lucide-react'
+import { BarChart3, History, LayoutDashboard, Radar, Sparkles } from 'lucide-react'
 import { ErrorBoundary } from './ux'
 
 const nav = [
-  { to: '/app', label: 'Stock outlook', icon: LayoutDashboard, end: true },
+  { to: '/app', label: 'AI forecast', icon: LayoutDashboard, end: true },
+  { to: '/app/scanner', label: 'AI scanner', icon: Radar },
   { to: '/app/market', label: 'Market charts', icon: BarChart3 },
-  { to: '/app/about', label: 'About', icon: CircleHelp },
+  { to: '/app/track-record', label: 'Track record', icon: History },
 ]
 
 export function AppLayout() {
@@ -23,7 +24,7 @@ export function AppLayout() {
               <span className="text-[10px] text-[var(--color-muted)] tracking-[.16em] uppercase">Market intelligence</span>
             </span>
           </NavLink>
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-1 overflow-x-auto">
             {nav.map(({ to, label, icon: Icon, end }) => (
               <NavLink
                 key={to}

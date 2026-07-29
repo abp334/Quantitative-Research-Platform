@@ -5,7 +5,8 @@ import { ToastProvider } from './components/ux'
 import { LandingPage } from './pages/LandingPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { DataExplorerPage } from './pages/DataExplorerPage'
-import { AboutPage } from './pages/AboutPage'
+import { ScannerPage } from './pages/ScannerPage'
+import { TrackRecordPage } from './pages/TrackRecordPage'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
@@ -21,7 +22,8 @@ export default function App() {
             <Route path="/app" element={<AppLayout />}>
               <Route index element={<DashboardPage />} />
               <Route path="market" element={<DataExplorerPage />} />
-              <Route path="about" element={<AboutPage />} />
+              <Route path="scanner" element={<ScannerPage />} />
+              <Route path="track-record" element={<TrackRecordPage />} />
               <Route path="*" element={<Navigate to="/app" replace />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
