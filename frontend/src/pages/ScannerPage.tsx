@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   CalendarClock,
   ArrowDownRight,
@@ -14,6 +14,7 @@ import { api } from '../api/client'
 import type { ScannerItem } from '../types'
 import { Badge, Card, ErrorBox } from '../components/ui'
 import { PageSkeleton } from '../components/ux'
+import { WatchlistButton } from '../components/WatchlistButton'
 
 type DirectionFilter = 'all' | 'bullish' | 'bearish'
 type SortKey = 'score' | 'return' | 'probability' | 'risk'
@@ -25,7 +26,11 @@ const percent = (value: number, signed = false) =>
   `${signed && value >= 0 ? '+' : ''}${(value * 100).toFixed(2)}%`
 
 export function ScannerPage() {
-  const [horizon, setHorizon] = useState(5)
+  const [params, setParams] = useSearchParams()
+  const requestedHorizon = Number(params.get('horizon'))
+  const [horizon, setHorizon] = useState(
+    [5, 10, 20].includes(requestedHorizon) ? requestedHorizon : 5,
+  )
   const [search, setSearch] = useState('')
   const [direction, setDirection] = useState<DirectionFilter>('all')
   const [sortBy, setSortBy] = useState<SortKey>('score')
@@ -116,7 +121,11 @@ export function ScannerPage() {
             <select
               className="market-input min-w-40"
               value={horizon}
-              onChange={(event) => setHorizon(Number(event.target.value))}
+              onChange={(event) => {
+                const next = Number(event.target.value)
+                setHorizon(next)
+                setParams({ horizon: String(next) }, { replace: true })
+              }}
             >
               <option value={5}>5 sessions</option>
               <option value={10}>10 sessions</option>
@@ -263,12 +272,15 @@ export function ScannerPage() {
                             </span>
                           </td>
                           <td className="px-3 py-4 text-right">
-                            <Link
-                              to={forecastLink}
-                              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-[var(--color-accent)] hover:bg-[rgba(61,222,168,.08)] transition"
-                            >
-                              Full forecast <ArrowUpRight className="h-3.5 w-3.5" />
-                            </Link>
+                            <span className="inline-flex items-center gap-1">
+                              <WatchlistButton stock={item} compact />
+                              <Link
+                                to={forecastLink}
+                                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-[var(--color-accent)] hover:bg-[rgba(61,222,168,.08)] transition"
+                              >
+                                Full forecast <ArrowUpRight className="h-3.5 w-3.5" />
+                              </Link>
+                            </span>
                           </td>
                         </tr>
                       )

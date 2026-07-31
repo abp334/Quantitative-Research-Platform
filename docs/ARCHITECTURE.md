@@ -6,10 +6,22 @@
 Bundled OHLCV → PostgreSQL → Stationary market features → Managed forecast engine
                                                              ↓
 React UI ← public-safe forecast, scenario, risk, scanner, and validation payloads
+   │
+   └── Browser research layer: watchlist, comparison, market pulse, capital stress tests
 ```
 
 The web application is market-first. Users never configure algorithms, generate features, or
 run training jobs.
+
+The browser adds a research-workspace layer without inventing market data:
+
+- Market Pulse aggregates scanner results into breadth and industry leadership.
+- Compare normalizes OHLCV histories and calculates realised volatility, maximum drawdown,
+  best/worst sessions, and pairwise return correlation.
+- Forecast Lab requests the supported horizons sequentially, translates ranges into illustrative
+  capital outcomes, and lets users stress-test return/loss thresholds.
+- Watchlist data, notes, and thesis prices remain in browser `localStorage`; they are not sent
+  to the API.
 
 ## Forecast engine
 

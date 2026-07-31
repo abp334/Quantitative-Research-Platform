@@ -21,6 +21,7 @@ import type { Forecast, Stock } from '../types'
 import { ForecastFanChart } from '../components/charts'
 import { Badge, Button, Card, ErrorBox } from '../components/ui'
 import { PageSkeleton } from '../components/ux'
+import { WatchlistButton } from '../components/WatchlistButton'
 
 const money = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
 const percent = (n: number, signed = false) => `${signed && n >= 0 ? '+' : ''}${(n * 100).toFixed(2)}%`
@@ -110,6 +111,7 @@ export function DashboardPage() {
               <Badge>{result.symbol}</Badge>
               <span className="text-sm text-[var(--color-muted)]">{result.company_name}</span>
               <Badge tone={result.bias === 'Bullish' ? 'up' : result.bias === 'Bearish' ? 'down' : 'neutral'}>{result.bias} forecast</Badge>
+              <WatchlistButton stock={result} compact />
             </div>
             <p className="text-xs uppercase tracking-[.16em] text-[var(--color-muted)] mt-7">AI base estimate after {result.horizon_days} sessions</p>
             <div className="flex flex-wrap items-end gap-4 mt-2">

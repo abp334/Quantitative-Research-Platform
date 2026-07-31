@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { OhlcvBar, Stock } from '../types'
 import { CandlestickChart, IndicatorLineChart, PriceVolumeChart, RsiChart } from '../components/charts'
@@ -22,8 +23,10 @@ function indicators(bars: OhlcvBar[]) {
 }
 
 export function DataExplorerPage() {
-  const [symbol, setSymbol] = useState('RELIANCE')
-  const [range, setRange] = useState(252)
+  const [params, setParams] = useSearchParams()
+  const [symbol, setSymbol] = useState(params.get('symbol') || 'RELIANCE')
+  const requestedRange = Number(params.get('range'))
+  const [range, setRange] = useState([90, 252, 504, 1000].includes(requestedRange) ? requestedRange : 252)
   const stocks = useQuery({ queryKey: ['stocks'], queryFn: () => api.stocks() as Promise<Stock[]> })
   const ohlcv = useQuery({ queryKey: ['ohlcv', symbol], queryFn: () => api.ohlcv(symbol, { limit: 1000 }) as Promise<OhlcvBar[]> })
   const bars = useMemo(() => (ohlcv.data ?? []).slice(-range), [ohlcv.data, range])
@@ -33,8 +36,8 @@ export function DataExplorerPage() {
     <div><p className="eyebrow w-fit">Market charts</p><h1 className="display text-3xl md:text-4xl font-bold mt-4">Explore price behaviour</h1><p className="text-[var(--color-muted)] mt-2">Review historical price, trading activity and momentum for any available stock.</p></div>
     <Card>
       <div className="flex flex-wrap gap-3">
-        <label className="flex-1 min-w-64"><span className="text-xs text-[var(--color-muted)] block mb-2">Stock</span><select className="market-input w-full" value={symbol} onChange={(e) => setSymbol(e.target.value)}>{(stocks.data ?? []).map(s => <option key={s.symbol} value={s.symbol}>{s.symbol}{s.company_name ? ` — ${s.company_name}` : ''}</option>)}</select></label>
-        <label><span className="text-xs text-[var(--color-muted)] block mb-2">Range</span><select className="market-input" value={range} onChange={(e) => setRange(Number(e.target.value))}><option value={90}>3 months</option><option value={252}>1 year</option><option value={504}>2 years</option><option value={1000}>All available</option></select></label>
+        <label className="flex-1 min-w-64"><span className="text-xs text-[var(--color-muted)] block mb-2">Stock</span><select className="market-input w-full" value={symbol} onChange={(e) => { const next = e.target.value; setSymbol(next); setParams({ symbol: next, range: String(range) }, { replace: true }) }}>{(stocks.data ?? []).map(s => <option key={s.symbol} value={s.symbol}>{s.symbol}{s.company_name ? ` — ${s.company_name}` : ''}</option>)}</select></label>
+        <label><span className="text-xs text-[var(--color-muted)] block mb-2">Range</span><select className="market-input" value={range} onChange={(e) => { const next = Number(e.target.value); setRange(next); setParams({ symbol, range: String(next) }, { replace: true }) }}><option value={90}>3 months</option><option value={252}>1 year</option><option value={504}>2 years</option><option value={1000}>All available</option></select></label>
       </div>
     </Card>
     {ohlcv.isLoading && <PageSkeleton />}
