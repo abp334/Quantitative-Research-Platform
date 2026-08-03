@@ -16,8 +16,8 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "Nexus AI Stock Forecast"
-    app_version: str = "2.0.0"
+    app_name: str = "NIFTY Quant Research Platform"
+    app_version: str = "1.0.0"
     debug: bool = False
     api_prefix: str = "/api/v1"
 

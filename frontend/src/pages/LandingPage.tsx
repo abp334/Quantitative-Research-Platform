@@ -1,85 +1,114 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import {
-  Activity,
-  ArrowRight,
-  BarChart3,
-  BrainCircuit,
-  CheckCircle2,
-  FlaskConical,
-  GitCompareArrows,
-  Sparkles,
-  Star,
-  TrendingUp,
-} from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '../api/client'
+import { Button } from '../components/ui'
 
 export function LandingPage() {
+  const stats = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: () => api.dashboard() as Promise<Record<string, unknown>>,
+    retry: false,
+  })
+
+  const counters = [
+    { label: 'NIFTY Stocks', value: Number(stats.data?.stock_count ?? 50) },
+    { label: 'OHLCV Bars', value: Number(stats.data?.bar_count ?? 235000) },
+    { label: 'Models', value: Number(stats.data?.model_count ?? 0) },
+    { label: 'Predictions', value: Number(stats.data?.prediction_count ?? 0) },
+  ]
+
   return (
-    <div className="min-h-screen overflow-hidden">
-      <nav className="max-w-7xl mx-auto px-6 md:px-10 h-20 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <span className="h-9 w-9 rounded-xl bg-[var(--color-accent)] flex items-center justify-center"><Sparkles className="h-4 w-4 text-[#061018]" /></span>
-          <span className="display text-xl font-bold">Nexus</span>
-        </div>
-        <Link to="/app" className="rounded-xl border border-[var(--color-line)] px-4 py-2 text-sm hover:bg-white/5">Open app</Link>
-      </nav>
-
-      <main>
-        <section className="relative max-w-7xl mx-auto px-6 md:px-10 pt-16 md:pt-24 pb-28">
-          <div className="hero-orb hero-orb-one" /><div className="hero-orb hero-orb-two" />
-          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 max-w-4xl mx-auto text-center">
-            <div className="eyebrow"><BrainCircuit className="h-4 w-4" /> Market intelligence, made simple</div>
-            <h1 className="display text-5xl md:text-7xl font-bold leading-[1.05] tracking-tight mt-6">
-              See what a stock’s history <span className="text-gradient">suggests comes next.</span>
-            </h1>
-            <p className="text-lg md:text-xl text-[var(--color-muted)] max-w-3xl mx-auto mt-7 leading-relaxed">
-              Explore the market, compare stocks, stress-test multi-horizon forecasts and keep a private research watchlist—all grounded in visible historical evidence.
-            </p>
-            <div className="mt-9 flex flex-wrap justify-center gap-3">
-              <Link to="/app" className="hero-button">Explore stock outlooks <ArrowRight className="h-4 w-4" /></Link>
-              <Link to="/app/pulse" className="rounded-xl border border-[var(--color-line)] px-5 py-3 text-sm hover:bg-white/5 transition">Open Market Pulse</Link>
-            </div>
-            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-7 text-xs text-[var(--color-muted)]">
-              {['Three-horizon scenario lab', 'Relative-value comparison', 'Persistent research watchlist', 'Visible forecast track record'].map((x) => <span key={x} className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-[var(--color-accent)]" />{x}</span>)}
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .2 }} className="relative z-10 max-w-4xl mx-auto mt-20 glass rounded-3xl p-4 md:p-6 border-white/10 shadow-2xl">
-            <div className="flex items-center justify-between pb-5 border-b border-[var(--color-line)]">
-              <div><span className="text-xs text-[var(--color-muted)]">Inside Nexus</span><h3 className="display text-xl font-bold mt-1">A complete research workspace</h3></div>
-              <span className="text-[var(--color-accent)] bg-[rgba(61,222,168,.1)] rounded-lg px-3 py-1.5 text-xs">Interactive, not precomputed</span>
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
-              {[
-                [Activity, 'Market Pulse', 'Breadth & leadership'],
-                [GitCompareArrows, 'Compare', 'Return, risk & correlation'],
-                [FlaskConical, 'Forecast Lab', 'Capital stress testing'],
-                [Star, 'Watchlist', 'Notes & thesis levels'],
-              ].map(([Icon, title, subtitle]) => {
-                const I = Icon as typeof Activity
-                return <div className="landing-workspace-card" key={String(title)}><I /><strong>{String(title)}</strong><span>{String(subtitle)}</span></div>
-              })}
-            </div>
-            <div className="landing-workflow mt-5">
-              {['Choose real archive data', 'Generate on demand', 'Challenge the range', 'Save your thesis'].map((step, index) => <div key={step}><i>{index + 1}</i><span>{step}</span></div>)}
-            </div>
-          </motion.div>
-        </section>
-
-        <section className="border-t border-[var(--color-line)] bg-black/10">
-          <div className="max-w-7xl mx-auto px-6 md:px-10 py-20 grid md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {[
-              [BarChart3, 'Understand the past', 'Interactive price, volume, volatility and momentum charts keep the focus on the stock.'],
-              [BrainCircuit, 'Forecast price and risk', 'Get a daily price path, range, bull/base/bear scenarios, market regime and confidence assessment.'],
-              [TrendingUp, 'Compare and challenge', 'Contrast return, drawdown and correlation, then stress-test all three forecast horizons.'],
-              [Star, 'Build your process', 'Save names, attach thesis levels and notes, then revisit the evidence as one research workspace.'],
-            ].map(([Icon, title, body]) => {
-              const I = Icon as typeof BarChart3
-              return <div key={String(title)} className="feature-card"><I className="h-6 w-6 text-[var(--color-accent)]" /><h3 className="display text-xl font-semibold mt-5">{String(title)}</h3><p className="text-sm text-[var(--color-muted)] mt-2 leading-relaxed">{String(body)}</p></div>
-            })}
+    <div className="min-h-screen">
+      <section className="relative overflow-hidden px-6 md:px-12 pt-16 pb-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="max-w-5xl mx-auto"
+        >
+          <div className="display text-sm tracking-[0.2em] uppercase text-[var(--color-accent)] mb-4">
+            Nexus Quant
           </div>
-        </section>
-      </main>
+          <h1 className="display text-4xl md:text-6xl font-extrabold leading-tight max-w-3xl">
+            Explainable Quantitative Research Platform
+          </h1>
+          <p className="mt-5 text-lg text-[var(--color-muted)] max-w-2xl">
+            Not a stock tip engine — a classical ML research system for understanding
+            NIFTY-50 market behaviour with walk-forward validation and SHAP explanations.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link to="/app">
+              <Button>Launch Platform</Button>
+            </Link>
+            <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">
+              <Button variant="ghost">API Docs</Button>
+            </a>
+          </div>
+        </motion.div>
+
+        <div className="max-w-5xl mx-auto mt-14 grid grid-cols-2 md:grid-cols-4 gap-4">
+          {counters.map((c, i) => (
+            <motion.div
+              key={c.label}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 + i * 0.08 }}
+              className="glass rounded-2xl p-4"
+            >
+              <div className="text-xs uppercase tracking-wider text-[var(--color-muted)]">
+                {c.label}
+              </div>
+              <div className="display text-2xl font-bold mono mt-2">
+                {c.value.toLocaleString()}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      <section className="px-6 md:px-12 py-16 border-t border-[var(--color-line)]">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-6">
+          {[
+            {
+              t: 'Feature Engineering',
+              d: 'SMA, EMA, RSI, MACD, ATR, Bollinger, lags and returns — built manually without TA-Lib.',
+            },
+            {
+              t: 'Walk-Forward ML',
+              d: 'Logistic Regression, Random Forest and XGBoost with Optuna — never random time splits.',
+            },
+            {
+              t: 'Explainability',
+              d: 'Every prediction ships with SHAP drivers, confidence, and a research narrative.',
+            },
+          ].map((f) => (
+            <div key={f.t} className="glass rounded-2xl p-6">
+              <h3 className="display text-lg font-semibold">{f.t}</h3>
+              <p className="text-sm text-[var(--color-muted)] mt-2">{f.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="px-6 md:px-12 py-16 border-t border-[var(--color-line)]">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="display text-2xl font-bold mb-4">Technology Stack</h2>
+          <p className="text-[var(--color-muted)] text-sm mb-6">
+            FastAPI · PostgreSQL · Scikit-Learn · XGBoost · Optuna · SHAP · React · Recharts · Docker
+          </p>
+          <h2 className="display text-2xl font-bold mb-4">Dataset</h2>
+          <p className="text-[var(--color-muted)] text-sm max-w-3xl">
+            Rohan Rao NIFTY-50 daily OHLCV (≈2000–2021). Data is preloaded into PostgreSQL —
+            researchers never upload CSVs. Focus on stocks, horizons, models and experiments.
+          </p>
+          <div className="mt-8">
+            <Link to="/app">
+              <Button>Enter the Research Console</Button>
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

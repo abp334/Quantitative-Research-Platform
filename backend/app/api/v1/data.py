@@ -8,10 +8,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.repositories import OhlcvRepository, StockRepository
-from app.schemas import DatasetStatsOut, OhlcvBarOut, StockOut
+from app.schemas import DatasetStatsOut, ImportRequest, ImportResponse, OhlcvBarOut, StockOut
+from app.services.etl_service import EtlService
 import numpy as np
 
 router = APIRouter(prefix="/data", tags=["data"])
+
+
+@router.post("/import", response_model=ImportResponse)
+async def import_dataset(
+    body: ImportRequest,
+    db: AsyncSession = Depends(get_db),
+) -> ImportResponse:
+    service = EtlService(db)
+    try:
+        result = await service.import_dataset(force=body.force)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Import failed: {exc}") from exc
+    return ImportResponse(**result)
 
 
 @router.get("/stocks", response_model=list[StockOut])

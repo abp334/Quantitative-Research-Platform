@@ -17,79 +17,92 @@ export type OhlcvBar = {
   vwap?: number | null
 }
 
-export type ForecastPoint = {
-  day: number
-  date: string
-  predicted_price: number
-  lower_price: number
-  upper_price: number
-  predicted_return: number
+export type DashboardStats = {
+  stock_count: number
+  bar_count: number
+  feature_run_count: number
+  model_count: number
+  prediction_count: number
+  latest_feature_run?: FeatureRun | null
+  latest_training_job?: TrainingJob | null
 }
 
-export type ForecastFactor = {
+export type FeatureRun = {
+  id: number
   name: string
-  state: 'positive' | 'negative' | 'neutral'
-  score: number
-  description: string
+  status: string
+  row_count: number
+  symbol_count: number
+  created_at: string
+  finished_at?: string | null
 }
 
-export type ValidationPoint = {
-  date: string
-  predicted_return: number
-  actual_return: number
-  direction_correct: boolean
+export type TrainingJob = {
+  id: number
+  status: string
+  config: Record<string, unknown>
+  progress?: string | null
+  error_message?: string | null
+  feature_run_id?: number | null
+  created_at: string
+  started_at?: string | null
+  finished_at?: string | null
 }
 
-export type Forecast = {
+export type ModelMetric = {
+  fold: number
+  accuracy?: number | null
+  precision?: number | null
+  recall?: number | null
+  f1?: number | null
+  roc_auc?: number | null
+  confusion_matrix?: number[][] | null
+  roc_curve?: { fpr: number[]; tpr: number[]; thresholds: number[] } | null
+  learning_curve?: {
+    train_sizes: number[]
+    train_scores: number[]
+    val_scores: number[]
+  } | null
+}
+
+export type ModelArtifact = {
+  id: number
+  name: string
+  algorithm: string
+  best_params?: Record<string, unknown> | null
+  feature_names?: string[] | null
+  global_importance?: Record<string, number> | null
+  feature_run_id?: number | null
+  training_job_id?: number | null
+  is_active: boolean
+  created_at: string
+  metrics: ModelMetric[]
+  meta?: Record<string, unknown> | null
+  prediction_horizon?: number | null
+}
+
+export type ShapContribution = {
+  feature: string
+  value: number
+  shap: number
+}
+
+export type Prediction = {
+  id: number
+  model_id: number
   symbol: string
-  company_name?: string | null
-  industry?: string | null
   as_of_date: string
-  current_price: number
-  horizon_days: number
-  bias: 'Bullish' | 'Bearish' | 'Neutral'
+  label: string
   probability_up: number
   confidence: number
-  expected_return: number
-  target_price: number
-  expected_low: number
-  expected_high: number
-  forecast_points: ForecastPoint[]
-  scenarios: Record<'bear' | 'base' | 'bull', {
-    label: string
-    price: number
-    return: number
-  }>
-  market_context: {
-    regime: string
-    risk_level: string
-    annualized_volatility: number
-    support: number
-    resistance: number
-    rsi: number
-    volume_ratio: number
-  }
-  factors: ForecastFactor[]
-  narrative: string
-  validation: {
-    direction_accuracy: number
-    mae_percent: number
-    rmse_percent: number
-    interval_coverage: number
-    validation_samples: number
-    recent: ValidationPoint[]
-  }
+  top_features: ShapContribution[]
+  positive_contributions: ShapContribution[]
+  negative_contributions: ShapContribution[]
 }
 
-export type ScannerItem = {
-  symbol: string
-  company_name?: string | null
-  industry?: string | null
-  as_of_date: string
-  last_price: number
-  expected_return: number
-  probability_up: number
-  validation_accuracy: number
-  volatility: number
-  score: number
+export type FeatureRow = {
+  date: string
+  features: Record<string, number>
+  target?: number | null
+  target_label?: string | null
 }
