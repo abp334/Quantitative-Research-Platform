@@ -1,32 +1,16 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import {
-  Activity,
-  ArrowDownRight,
-  ArrowUpRight,
-  CalendarClock,
-  Layers3,
-  Radar,
-  ShieldAlert,
-  Sparkles,
-} from 'lucide-react'
+import { Activity, ArrowDownRight, ArrowUpRight, CalendarClock, Radar, ShieldAlert } from 'lucide-react'
 import { api } from '../api/client'
 import type { ScannerItem } from '../types'
 import { Badge, Card, ErrorBox } from '../components/ui'
 import { PageSkeleton } from '../components/ux'
 import { WatchlistButton } from '../components/WatchlistButton'
 
-const percent = (value: number, signed = false) =>
-  `${signed && value >= 0 ? '+' : ''}${(value * 100).toFixed(1)}%`
+const pct = (v: number, signed = false) => `${signed && v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`
 
-type IndustryPulse = {
-  name: string
-  count: number
-  score: number
-  expectedReturn: number
-  positiveShare: number
-}
+type IndustryPulse = { name: string; count: number; score: number; expectedReturn: number; positiveShare: number }
 
 export function MarketPulsePage() {
   const [horizon, setHorizon] = useState(5)
@@ -38,10 +22,8 @@ export function MarketPulsePage() {
 
   const pulse = useMemo(() => {
     const rows = scanner.data ?? []
-    const positive = rows.filter((item) => item.expected_return >= 0)
-    const highConviction = rows.filter(
-      (item) => item.probability_up >= 0.62 || item.probability_up <= 0.38,
-    )
+    const positive = rows.filter((i) => i.expected_return >= 0)
+    const highConviction = rows.filter((i) => i.probability_up >= 0.62 || i.probability_up <= 0.38)
     const industries = new Map<string, ScannerItem[]>()
     rows.forEach((item) => {
       const key = item.industry || 'Unclassified'
@@ -49,13 +31,10 @@ export function MarketPulsePage() {
     })
     const industryPulse: IndustryPulse[] = [...industries.entries()]
       .map(([name, members]) => ({
-        name,
-        count: members.length,
-        score: members.reduce((sum, item) => sum + item.score, 0) / members.length,
-        expectedReturn:
-          members.reduce((sum, item) => sum + item.expected_return, 0) / members.length,
-        positiveShare:
-          members.filter((item) => item.expected_return >= 0).length / members.length,
+        name, count: members.length,
+        score: members.reduce((s, i) => s + i.score, 0) / members.length,
+        expectedReturn: members.reduce((s, i) => s + i.expected_return, 0) / members.length,
+        positiveShare: members.filter((i) => i.expected_return >= 0).length / members.length,
       }))
       .sort((a, b) => b.score - a.score)
 
@@ -63,201 +42,126 @@ export function MarketPulsePage() {
     return {
       positiveCount: positive.length,
       breadth: rows.length ? positive.length / rows.length : 0,
-      averageReturn: rows.length
-        ? rows.reduce((sum, item) => sum + item.expected_return, 0) / rows.length
-        : 0,
-      averageVolatility: rows.length
-        ? rows.reduce((sum, item) => sum + item.volatility, 0) / rows.length
-        : 0,
+      avgReturn: rows.length ? rows.reduce((s, i) => s + i.expected_return, 0) / rows.length : 0,
+      avgVolatility: rows.length ? rows.reduce((s, i) => s + i.volatility, 0) / rows.length : 0,
       highConviction: highConviction.length,
-      industryCount: industryPulse.length,
-      leaders: sortedReturn.slice(0, 3),
-      laggards: sortedReturn.slice(-3).reverse(),
       industries: industryPulse.slice(0, 8),
+      leaders: sortedReturn.slice(0, 5),
+      laggards: sortedReturn.slice(-5).reverse(),
     }
   }, [scanner.data])
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-5">
-        <div>
-          <div className="eyebrow">
-            <Activity className="h-4 w-4" /> Cross-sectional intelligence
-          </div>
-          <h1 className="display text-3xl md:text-5xl font-bold tracking-tight mt-5">
-            Market pulse
-          </h1>
-          <p className="text-[var(--color-muted)] mt-3 max-w-2xl leading-relaxed">
-            See whether opportunity is broad or concentrated, which industries lead, and where
-            forecast conviction is strongest across the entire archive universe.
-          </p>
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <div className="page-tag"><Activity style={{ width: 14, height: 14 }} /> Market Pulse</div>
+          <h1>Market Breadth & Leadership</h1>
+          <p className="page-desc">See whether opportunity is broad or concentrated, which industries lead, and where conviction is strongest.</p>
         </div>
         <label>
-          <span className="text-xs text-[var(--color-muted)] block mb-2">Pulse horizon</span>
-          <select
-            className="market-input min-w-48"
-            value={horizon}
-            onChange={(event) => setHorizon(Number(event.target.value))}
-          >
-            <option value={5}>5 trading sessions</option>
-            <option value={10}>10 trading sessions</option>
-            <option value={20}>20 trading sessions</option>
+          <span className="form-label">Horizon</span>
+          <select className="form-select" style={{ minWidth: 180 }} value={horizon} onChange={(e) => setHorizon(Number(e.target.value))}>
+            <option value={5}>5 sessions</option>
+            <option value={10}>10 sessions</option>
+            <option value={20}>20 sessions</option>
           </select>
         </label>
-      </section>
+      </div>
 
       {scanner.isLoading && <PageSkeleton />}
       {scanner.error && <ErrorBox message={(scanner.error as Error).message} />}
 
       {scanner.data && (
         <>
-          <div className="stale-data-notice">
-            <CalendarClock className="h-5 w-5 shrink-0" />
-            <div>
-              <strong>Historical market snapshot</strong>
-              <span>
-                {' '}
-                Breadth and leadership use forecasts from data through{' '}
-                {scanner.data[0]?.as_of_date ?? 'the archive end date'}, not today’s market.
-              </span>
+          <div className="data-notice">
+            <CalendarClock style={{ width: 18, height: 18 }} />
+            <div><strong>Historical snapshot</strong> <span className="data-notice-text">Data through {scanner.data[0]?.as_of_date ?? 'archive date'}.</span></div>
+          </div>
+
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '24px' }}>
+            <div className="flex flex-wrap items-end gap-4">
+              <div>
+                <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>Forecast Breadth</div>
+                <div className="mono" style={{ fontSize: 36, fontWeight: 700, marginTop: 4 }}>{pct(pulse.breadth)}</div>
+              </div>
+              <Badge tone={pulse.breadth >= 0.6 ? 'up' : pulse.breadth < 0.4 ? 'down' : 'neutral'}>
+                {pulse.breadth >= 0.6 ? 'Broadly Constructive' : pulse.breadth < 0.4 ? 'Broadly Defensive' : 'Mixed'}
+              </Badge>
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 8 }}>
+              {pulse.positiveCount} of {scanner.data.length} stocks have a positive base estimate.
+            </p>
+            <div className="breadth-bar">
+              <div className="breadth-bar-fill" style={{ width: `${pulse.breadth * 100}%` }} />
+              <div className="breadth-bar-mid" />
             </div>
           </div>
 
-          <section className="pulse-hero">
-            <div>
-              <span className="pulse-label">Forecast breadth</span>
-              <div className="flex flex-wrap items-end gap-3 mt-2">
-                <strong className="mono text-4xl md:text-5xl">
-                  {percent(pulse.breadth)}
-                </strong>
-                <Badge tone={pulse.breadth >= 0.6 ? 'up' : pulse.breadth < 0.4 ? 'down' : 'neutral'}>
-                  {pulse.breadth >= 0.6
-                    ? 'Broadly constructive'
-                    : pulse.breadth < 0.4
-                      ? 'Broadly defensive'
-                      : 'Mixed market'}
-                </Badge>
-              </div>
-              <p className="text-sm text-[var(--color-muted)] mt-3">
-                {pulse.positiveCount} of {scanner.data.length} stocks have a positive base
-                estimate over the selected horizon.
-              </p>
+          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <div className="metric-tile">
+              <span className="metric-label">Avg Expected Return</span>
+              <span className={`metric-value ${pulse.avgReturn >= 0 ? 'text-green' : 'text-red'}`}>{pct(pulse.avgReturn, true)}</span>
             </div>
-            <div className="breadth-track" aria-label={`${percent(pulse.breadth)} positive`}>
-              <i style={{ width: `${pulse.breadth * 100}%` }} />
-              <span style={{ left: '50%' }} />
+            <div className="metric-tile">
+              <span className="metric-label">High-Conviction Signals</span>
+              <span className="metric-value">{pulse.highConviction}</span>
             </div>
-          </section>
+            <div className="metric-tile">
+              <span className="metric-label">Avg Annual Volatility</span>
+              <span className="metric-value">{pct(pulse.avgVolatility)}</span>
+            </div>
+            <div className="metric-tile">
+              <span className="metric-label">Industries Represented</span>
+              <span className="metric-value">{pulse.industries.length}</span>
+            </div>
+          </div>
 
-          <section className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <div className="metric-tile">
-              <span>Average expected return</span>
-              <strong
-                className={
-                  pulse.averageReturn >= 0
-                    ? 'text-[var(--color-accent)]'
-                    : 'text-[var(--color-danger)]'
-                }
-              >
-                {percent(pulse.averageReturn, true)}
-              </strong>
-            </div>
-            <div className="metric-tile">
-              <span>High-conviction signals</span>
-              <strong>{pulse.highConviction}</strong>
-            </div>
-            <div className="metric-tile">
-              <span>Average annual volatility</span>
-              <strong>{percent(pulse.averageVolatility)}</strong>
-            </div>
-            <div className="metric-tile">
-              <span>Industries represented</span>
-              <strong>{pulse.industryCount}</strong>
-            </div>
-          </section>
-
-          <section className="grid xl:grid-cols-[1.08fr_.92fr] gap-6">
-            <Card
-              title="Industry leadership"
-              subtitle="Average forecast score and breadth within each group"
-              action={<Layers3 className="h-4 w-4 text-[var(--color-accent)]" />}
-            >
-              <div className="space-y-3">
-                {pulse.industries.map((industry) => (
-                  <div className="industry-row" key={industry.name}>
-                    <div className="min-w-0">
-                      <strong>{industry.name}</strong>
-                      <span>{industry.count} stocks</span>
-                    </div>
-                    <div className="industry-bar">
-                      <i
-                        style={{ width: `${Math.max(4, industry.positiveShare * 100)}%` }}
-                        className={industry.expectedReturn >= 0 ? '' : 'industry-bar-down'}
-                      />
-                    </div>
-                    <div className="text-right">
-                      <strong
-                        className={
-                          industry.expectedReturn >= 0
-                            ? 'text-[var(--color-accent)]'
-                            : 'text-[var(--color-danger)]'
-                        }
-                      >
-                        {percent(industry.expectedReturn, true)}
-                      </strong>
-                      <span>score {industry.score.toFixed(1)}</span>
-                    </div>
+          <div className="grid xl:grid-cols-[1.1fr_.9fr] gap-4">
+            <Card title="Industry Leadership" subtitle="Average forecast score by sector">
+              {pulse.industries.map((ind) => (
+                <div className="industry-row" key={ind.name}>
+                  <div>
+                    <strong>{ind.name}</strong>
+                    <div className="industry-count">{ind.count} stocks</div>
                   </div>
-                ))}
-              </div>
+                  <div className="industry-bar">
+                    <div className={`industry-bar-fill ${ind.expectedReturn < 0 ? 'down' : ''}`} style={{ width: `${Math.max(4, ind.positiveShare * 100)}%` }} />
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <strong className={ind.expectedReturn >= 0 ? 'text-green' : 'text-red'}>{pct(ind.expectedReturn, true)}</strong>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Score {ind.score.toFixed(1)}</div>
+                  </div>
+                </div>
+              ))}
             </Card>
 
-            <Card
-              title="Leadership board"
-              subtitle="Highest and lowest expected movement"
-              action={<Radar className="h-4 w-4 text-[var(--color-accent)]" />}
-            >
+            <Card title="Leaders & Laggards" subtitle="Highest and lowest expected returns">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <div className="text-[11px] uppercase tracking-wider text-[var(--color-muted)] mb-2">
-                    Positive leaders
-                  </div>
-                  <div className="space-y-2">
-                    {pulse.leaders.map((item) => (
-                      <PulseStockRow key={item.symbol} item={item} horizon={horizon} />
-                    ))}
-                  </div>
+                  <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 8 }}>Top performers</div>
+                  {pulse.leaders.map((item) => (
+                    <PulseStockRow key={item.symbol} item={item} horizon={horizon} />
+                  ))}
                 </div>
                 <div>
-                  <div className="text-[11px] uppercase tracking-wider text-[var(--color-muted)] mb-2">
-                    Weakest outlooks
-                  </div>
-                  <div className="space-y-2">
-                    {pulse.laggards.map((item) => (
-                      <PulseStockRow key={item.symbol} item={item} horizon={horizon} />
-                    ))}
-                  </div>
+                  <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 8 }}>Weakest outlooks</div>
+                  {pulse.laggards.map((item) => (
+                    <PulseStockRow key={item.symbol} item={item} horizon={horizon} />
+                  ))}
                 </div>
               </div>
             </Card>
-          </section>
+          </div>
 
-          <section className="flex flex-col sm:flex-row gap-4">
-            <Link to={`/app/scanner?horizon=${horizon}`} className="workspace-cta">
-              <Sparkles className="h-5 w-5" />
-              <span>
-                <strong>Open the full scanner</strong>
-                <small>Filter and rank every stock</small>
-              </span>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link to={`/app/scanner?horizon=${horizon}`} className="btn btn-primary">
+              <Radar style={{ width: 16, height: 16 }} /> Open Full Scanner
             </Link>
-            <Link to="/app/compare" className="workspace-cta">
-              <ShieldAlert className="h-5 w-5" />
-              <span>
-                <strong>Compare the leaders</strong>
-                <small>Check returns, drawdowns and correlation</small>
-              </span>
+            <Link to="/app/compare" className="btn btn-ghost">
+              <ShieldAlert style={{ width: 16, height: 16 }} /> Compare Leaders
             </Link>
-          </section>
+          </div>
         </>
       )}
     </div>
@@ -265,23 +169,16 @@ export function MarketPulsePage() {
 }
 
 function PulseStockRow({ item, horizon }: { item: ScannerItem; horizon: number }) {
-  const positive = item.expected_return >= 0
+  const up = item.expected_return >= 0
   return (
-    <div className="pulse-stock-row">
-      <Link
-        to={`/app?symbol=${encodeURIComponent(item.symbol)}&horizon=${horizon}`}
-        className="min-w-0 flex-1"
-      >
+    <div className="pulse-stock">
+      <Link to={`/app?symbol=${item.symbol}&horizon=${horizon}`} style={{ flex: 1, textDecoration: 'none', color: 'var(--text-primary)' }}>
         <strong>{item.symbol}</strong>
-        <span>{item.company_name || item.industry || 'NIFTY equity'}</span>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.company_name || item.industry || 'NIFTY'}</span>
       </Link>
-      <span
-        className={`inline-flex items-center gap-1 mono text-xs ${
-          positive ? 'text-[var(--color-accent)]' : 'text-[var(--color-danger)]'
-        }`}
-      >
-        {positive ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-        {percent(item.expected_return, true)}
+      <span className={`mono ${up ? 'text-green' : 'text-red'}`} style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 2 }}>
+        {up ? <ArrowUpRight style={{ width: 14, height: 14 }} /> : <ArrowDownRight style={{ width: 14, height: 14 }} />}
+        {pct(item.expected_return, true)}
       </span>
       <WatchlistButton stock={item} compact />
     </div>

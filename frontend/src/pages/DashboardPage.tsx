@@ -2,41 +2,49 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
-  Activity,
-  AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
-  BrainCircuit,
+  BarChart2,
   CalendarClock,
   CheckCircle2,
-  Gauge,
-  Layers3,
+  ChevronRight,
+  HelpCircle,
+  Info,
+  Layers,
+  Play,
   Search,
-  ShieldAlert,
-  Sparkles,
-  Target,
+  ShieldCheck,
+  TrendingDown,
+  TrendingUp,
 } from 'lucide-react'
 import { api } from '../api/client'
-import type { Forecast, Stock } from '../types'
-import { ForecastFanChart } from '../components/charts'
-import { Badge, Button, Card, ErrorBox } from '../components/ui'
+import type { Forecast, OhlcvBar, Stock } from '../types'
+import { ComprehensiveTechnicalChart, ForecastFanChart } from '../components/charts'
+import { Badge, Button, Card, ErrorBox, InfoTooltip } from '../components/ui'
 import { PageSkeleton } from '../components/ux'
 import { WatchlistButton } from '../components/WatchlistButton'
 
 const money = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
-const percent = (n: number, signed = false) => `${signed && n >= 0 ? '+' : ''}${(n * 100).toFixed(2)}%`
+const pct = (n: number, signed = false) => `${signed && n >= 0 ? '+' : ''}${(n * 100).toFixed(2)}%`
 
 export function DashboardPage() {
   const [params, setParams] = useSearchParams()
   const initialSymbol = params.get('symbol') || 'RELIANCE'
   const initialHorizon = [5, 10, 20].includes(Number(params.get('horizon'))) ? Number(params.get('horizon')) : 10
+
   const [symbol, setSymbol] = useState(initialSymbol)
   const [horizon, setHorizon] = useState(initialHorizon)
-  const [request, setRequest] = useState<{ symbol: string; horizon: number } | null>(
-    params.has('symbol') ? { symbol: initialSymbol, horizon: initialHorizon } : null,
-  )
+  const [request, setRequest] = useState<{ symbol: string; horizon: number } | null>({
+    symbol: initialSymbol,
+    horizon: initialHorizon,
+  })
+  const [activeChartTab, setActiveChartTab] = useState<'forecast' | 'technical'>('forecast')
 
-  const stocks = useQuery({ queryKey: ['stocks'], queryFn: () => api.stocks() as Promise<Stock[]> })
+  const stocks = useQuery({
+    queryKey: ['stocks'],
+    queryFn: () => api.stocks() as Promise<Stock[]>,
+  })
+
   const forecast = useQuery({
     queryKey: ['forecast', request?.symbol, request?.horizon],
     queryFn: () => api.forecast({ symbol: request!.symbol, horizon_days: request!.horizon }) as Promise<Forecast>,
@@ -44,143 +52,347 @@ export function DashboardPage() {
     staleTime: 5 * 60_000,
   })
 
-  const runForecast = () => {
+  const ohlcv = useQuery({
+    queryKey: ['ohlcv', request?.symbol],
+    queryFn: () => api.ohlcv(request!.symbol, { limit: 120 }) as Promise<OhlcvBar[]>,
+    enabled: !!request,
+    staleTime: 5 * 60_000,
+  })
+
+  const runModel = () => {
     setRequest({ symbol, horizon })
     setParams({ symbol, horizon: String(horizon) })
   }
-  const result = forecast.data
-  const positive = (result?.expected_return ?? 0) > 0
 
-  return <div className="space-y-6">
-    <section className="grid lg:grid-cols-[1fr_auto] items-end gap-5">
-      <div>
-        <div className="eyebrow"><BrainCircuit className="h-4 w-4" /> Multi-horizon intelligence</div>
-        <h1 className="display text-3xl md:text-5xl font-bold tracking-tight mt-5">AI price forecast</h1>
-        <p className="text-[var(--color-muted)] mt-3 max-w-2xl leading-relaxed">
-          Estimate a future price path, probable range, return and risk—not only whether the next candle may be green or red.
+  const result = forecast.data
+  const positive = (result?.expected_return ?? 0) >= 0
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-tag">
+          <TrendingUp style={{ width: 12, height: 12 }} /> Price & Risk Model
+        </div>
+        <h1>Stock Price Forecast & Analysis</h1>
+        <p className="page-desc">
+          Select any NIFTY stock to see expected price predictions, target dates, best/worst case scenarios, and plain-English factor explanations.
         </p>
       </div>
-      <div className="flex items-center gap-2 text-xs text-[var(--color-muted)]"><Layers3 className="h-4 w-4 text-[var(--color-accent)]" /> Price · range · probability · risk</div>
-    </section>
 
-    <Card>
-      <div className="grid md:grid-cols-[1fr_auto_auto] gap-3 items-end">
-        <label>
-          <span className="text-xs text-[var(--color-muted)] block mb-2">Stock</span>
-          <span className="relative block">
-            <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-[var(--color-muted)]" />
-            <select className="market-input pl-10 w-full" value={symbol} onChange={(event) => setSymbol(event.target.value)}>
-              {(stocks.data ?? []).map((stock) => <option key={stock.symbol} value={stock.symbol}>{stock.symbol}{stock.company_name ? ` — ${stock.company_name}` : ''}</option>)}
-            </select>
-          </span>
-        </label>
-        <label>
-          <span className="text-xs text-[var(--color-muted)] block mb-2">Forecast window</span>
-          <select className="market-input min-w-48" value={horizon} onChange={(event) => setHorizon(Number(event.target.value))}>
-            <option value={5}>5 trading sessions</option>
-            <option value={10}>10 trading sessions</option>
-            <option value={20}>20 trading sessions</option>
-          </select>
-        </label>
-        <Button onClick={runForecast} disabled={forecast.isFetching}>{forecast.isFetching ? 'Building forecast…' : 'Run AI forecast'}</Button>
-      </div>
-    </Card>
+      {/* Selector Control Bar */}
+      <div className="p-3 rounded bg-[#111520] border border-[#1e2536]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <label>
+              <span className="form-label">
+                Select Stock <InfoTooltip text="Choose any of the 50 Indian NIFTY equities to analyse." />
+              </span>
+              <select
+                className="form-select"
+                style={{ width: 240 }}
+                value={symbol}
+                onChange={(e) => setSymbol(e.target.value)}
+              >
+                {(stocks.data ?? []).map((s) => (
+                  <option key={s.symbol} value={s.symbol}>
+                    {s.symbol} {s.company_name ? ` — ${s.company_name}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-    {!request && <section className="forecast-empty">
-      <div className="forecast-empty-icon"><Sparkles className="h-7 w-7" /></div>
-      <h2 className="display text-2xl font-semibold mt-5">A complete forecast, in one request</h2>
-      <p className="text-sm text-[var(--color-muted)] max-w-xl mx-auto mt-2">Nexus will privately study the stock’s historical returns, trend, momentum, volume and volatility, then test its estimates on unseen history before showing you the result.</p>
-      <div className="grid sm:grid-cols-4 gap-3 max-w-3xl mx-auto mt-7">
-        {[[Target,'Target price'],[Activity,'Forecast path'],[ShieldAlert,'Risk range'],[CheckCircle2,'Track record']].map(([Icon,label]) => { const I=Icon as typeof Target; return <div key={String(label)} className="mini-capability"><I className="h-4 w-4"/>{String(label)}</div> })}
-      </div>
-    </section>}
+            <label>
+              <span className="form-label">
+                Forecast Horizon <InfoTooltip text="How many trading days into the future to forecast (5, 10, or 20 sessions)." />
+              </span>
+              <div className="inline-flex rounded border border-[#1e2536] bg-[#0d101a] p-0.5 text-xs font-mono">
+                {[5, 10, 20].map((h) => (
+                  <button
+                    key={h}
+                    type="button"
+                    className={`px-3 py-1 rounded transition ${horizon === h ? 'bg-blue-600 text-white font-semibold' : 'text-slate-400 hover:text-white'}`}
+                    onClick={() => setHorizon(h)}
+                  >
+                    {h} Trading Days
+                  </button>
+                ))}
+              </div>
+            </label>
 
-    {forecast.isFetching && <PageSkeleton />}
-    {forecast.error && <ErrorBox message={(forecast.error as Error).message} />}
+            <Button variant="primary" onClick={runModel} disabled={forecast.isFetching}>
+              <Play style={{ width: 12, height: 12, fill: 'currentColor' }} />
+              {forecast.isFetching ? 'Calculating...' : 'Run Forecast'}
+            </Button>
+          </div>
 
-    {result && !forecast.isFetching && <>
-      <div className="stale-data-notice">
-        <CalendarClock className="h-5 w-5 shrink-0" />
-        <div><strong>Historical-data forecast</strong><span> This dataset is available through {result.as_of_date}. The projected dates continue from that point and are not a live {new Date().getFullYear()} market forecast.</span></div>
-      </div>
-
-      <section className={`forecast-hero ${positive ? 'forecast-positive' : 'forecast-negative'}`}>
-        <div className="grid lg:grid-cols-[1fr_270px] gap-8">
-          <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Badge>{result.symbol}</Badge>
-              <span className="text-sm text-[var(--color-muted)]">{result.company_name}</span>
-              <Badge tone={result.bias === 'Bullish' ? 'up' : result.bias === 'Bearish' ? 'down' : 'neutral'}>{result.bias} forecast</Badge>
-              <WatchlistButton stock={result} compact />
+          {result && (
+            <div className="flex items-center gap-3 text-xs font-mono text-slate-400">
+              <span>Historical As-Of: <strong className="text-slate-200">{result.as_of_date}</strong></span>
+              <span>Today's Price: <strong className="text-slate-200">{money(result.current_price)}</strong></span>
+              {stocks.data && <WatchlistButton stock={(stocks.data ?? []).find((s) => s.symbol === symbol) ?? { symbol }} compact />}
             </div>
-            <p className="text-xs uppercase tracking-[.16em] text-[var(--color-muted)] mt-7">AI base estimate after {result.horizon_days} sessions</p>
-            <div className="flex flex-wrap items-end gap-4 mt-2">
-              <span className="mono text-4xl md:text-5xl font-semibold">{money(result.target_price)}</span>
-              <span className={`flex items-center gap-1 pb-1 font-medium ${positive ? 'text-[var(--color-accent)]' : 'text-[var(--color-danger)]'}`}>
-                {positive ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}{percent(result.expected_return, true)}
+          )}
+        </div>
+      </div>
+
+      {forecast.isFetching && <PageSkeleton />}
+      {forecast.error && <ErrorBox message={(forecast.error as Error).message} />}
+
+      {result && !forecast.isFetching && (
+        <>
+          <div className="data-notice">
+            <CalendarClock style={{ width: 15, height: 15 }} />
+            <div>
+              <strong>Archive Data Notice:</strong>{' '}
+              <span className="data-notice-text">
+                Evaluated on historical NIFTY dataset through {result.as_of_date}. Predictions forecast forward from that date.
               </span>
             </div>
-            <p className="text-sm text-[var(--color-muted)] mt-3 max-w-2xl leading-relaxed">{result.narrative}</p>
           </div>
-          <div className="forecast-probability">
-            <Gauge className="h-5 w-5 text-[var(--color-accent)]" />
-            <strong>{Math.round(result.probability_up * 100)}%</strong>
-            <span>probability of finishing above {money(result.current_price)}</span>
-            <div><i style={{ width: `${result.probability_up * 100}%` }} /></div>
-          </div>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-8">
-          <div className="metric-tile"><span>Current price</span><strong>{money(result.current_price)}</strong></div>
-          <div className="metric-tile"><span>Expected range</span><strong className="!text-base">{money(result.expected_low)} – {money(result.expected_high)}</strong></div>
-          <div className="metric-tile"><span>Signal confidence</span><strong>{Math.round(result.confidence * 100)}%</strong></div>
-          <div className="metric-tile"><span>Market regime</span><strong className="!text-base">{result.market_context.regime}</strong></div>
-        </div>
-      </section>
 
-      <Card title="Projected price path" subtitle={`Base estimate and expected range for the next ${result.horizon_days} trading sessions`} action={<Badge>Range is probabilistic</Badge>}>
-        <ForecastFanChart data={result.forecast_points} currentPrice={result.current_price} asOfDate={result.as_of_date} />
-      </Card>
-
-      <section className="grid md:grid-cols-3 gap-4">
-        {(['bear','base','bull'] as const).map((key) => {
-          const scenario = result.scenarios[key]
-          return <div className={`scenario-card scenario-${key}`} key={key}>
-            <span>{scenario.label}</span>
-            <strong>{money(scenario.price)}</strong>
-            <em>{percent(scenario.return, true)}</em>
-            <small>{key === 'bear' ? 'Lower expected boundary' : key === 'bull' ? 'Upper expected boundary' : 'Most likely estimate'}</small>
-          </div>
-        })}
-      </section>
-
-      <section className="grid lg:grid-cols-[1.3fr_.7fr] gap-6">
-        <Card title="What is shaping the forecast" subtitle="Market-language signals calculated from the stock’s own history">
+          {/* STEP 1: THE FORECAST OUTCOME */}
           <div className="space-y-3">
-            {result.factors.map((factor) => <div key={factor.name} className="factor-row">
-              <span className={`factor-dot factor-${factor.state}`} />
-              <div className="min-w-0 flex-1"><div className="flex justify-between gap-3"><strong>{factor.name}</strong><span className={`text-xs factor-text-${factor.state}`}>{factor.state}</span></div><p>{factor.description}</p></div>
-              <div className="factor-meter"><i style={{ width: `${Math.abs(factor.score) * 100}%` }} className={factor.score >= 0 ? 'factor-meter-up' : 'factor-meter-down'} /></div>
-            </div>)}
-          </div>
-        </Card>
-        <Card title="Risk & market levels">
-          <div className="space-y-4">
-            <div className="context-row"><span>Risk level</span><Badge tone={result.market_context.risk_level === 'High' ? 'down' : result.market_context.risk_level === 'Low' ? 'up' : 'neutral'}>{result.market_context.risk_level}</Badge></div>
-            <div className="context-row"><span>Annualised volatility</span><strong>{percent(result.market_context.annualized_volatility)}</strong></div>
-            <div className="context-row"><span>Nearby support</span><strong>{money(result.market_context.support)}</strong></div>
-            <div className="context-row"><span>Nearby resistance</span><strong>{money(result.market_context.resistance)}</strong></div>
-            <div className="context-row"><span>RSI momentum</span><strong>{result.market_context.rsi.toFixed(1)}</strong></div>
-            <div className="context-row"><span>Relative volume</span><strong>{result.market_context.volume_ratio.toFixed(2)}×</strong></div>
-          </div>
-        </Card>
-      </section>
+            <div className="flex items-center justify-between">
+              <h2 className="font-mono text-xs uppercase font-bold text-blue-400 tracking-wider">
+                Step 1: The Model Prediction ({result.symbol} — {result.horizon_days} Trading Days)
+              </h2>
+            </div>
 
-      <section className="validation-preview">
-        <div className="flex gap-3"><CheckCircle2 className="h-5 w-5 text-[var(--color-accent)] shrink-0 mt-1" /><div><h2 className="display text-xl font-semibold">Validated against unseen history</h2><p className="text-sm text-[var(--color-muted)] mt-1">Direction was correct in {(result.validation.direction_accuracy * 100).toFixed(1)}% of {result.validation.validation_samples} recent test cases, with average return error of {result.validation.mae_percent.toFixed(2)}%.</p></div></div>
-        <Link to={`/app/track-record?symbol=${result.symbol}&horizon=${result.horizon_days}`} className="text-sm text-[var(--color-accent)] whitespace-nowrap">Open full track record →</Link>
-      </section>
+            {/* Verdict Summary Banner */}
+            <div
+              className={`p-4 rounded border flex flex-wrap items-center justify-between gap-4 ${
+                positive
+                  ? 'bg-green-950/20 border-green-800/40 text-green-300'
+                  : 'bg-red-950/20 border-red-800/40 text-red-300'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {positive ? (
+                  <TrendingUp style={{ width: 28, height: 28, flexShrink: 0 }} />
+                ) : (
+                  <TrendingDown style={{ width: 28, height: 28, flexShrink: 0 }} />
+                )}
+                <div>
+                  <div className="font-bold text-sm">
+                    {result.bias} Outlook — Expected Return of {pct(result.expected_return, true)}
+                  </div>
+                  <div className="text-xs text-slate-300 mt-0.5">
+                    Model predicts {result.symbol} will move from {money(result.current_price)} to approximately{' '}
+                    <strong>{money(result.target_price)}</strong> over the next {result.horizon_days} trading days.
+                  </div>
+                </div>
+              </div>
+              <Badge tone={positive ? 'up' : 'down'}>
+                {Math.round(result.probability_up * 100)}% Upside Odds
+              </Badge>
+            </div>
 
-      <div className="flex gap-2 text-xs text-[var(--color-muted)] px-1"><AlertTriangle className="h-4 w-4 shrink-0 text-[var(--color-warning)]" /> Forecast ranges are estimates derived from historical behaviour. They are not guaranteed price targets or investment advice.</div>
-    </>}
-  </div>
+            {/* 4 Key Stat Metric Tiles with Subtitles */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="metric-tile">
+                <div className="flex items-center justify-between">
+                  <span className="metric-label">Predicted Target Price</span>
+                  <InfoTooltip text="The expected rupee price of this stock at the end of the forecast period." />
+                </div>
+                <span className="metric-value text-blue-400">{money(result.target_price)}</span>
+                <span className="metric-hint">Current: {money(result.current_price)}</span>
+              </div>
+
+              <div className="metric-tile">
+                <div className="flex items-center justify-between">
+                  <span className="metric-label">Expected Return</span>
+                  <InfoTooltip text="Predicted percentage change from current price over N trading days." />
+                </div>
+                <span className={`metric-value ${positive ? 'text-green' : 'text-red'}`}>
+                  {pct(result.expected_return, true)}
+                </span>
+                <span className="metric-hint">Over {result.horizon_days} sessions</span>
+              </div>
+
+              <div className="metric-tile">
+                <div className="flex items-center justify-between">
+                  <span className="metric-label">Odds of Price Increase</span>
+                  <InfoTooltip text="Probability (0% to 100%) that the stock price finishes higher than today's price." />
+                </div>
+                <span className="metric-value">{Math.round(result.probability_up * 100)}%</span>
+                <span className="metric-hint">
+                  {result.probability_up >= 0.55 ? 'Favors Upward Move' : result.probability_up <= 0.45 ? 'Favors Downward Move' : 'Neutral Coin-Flip'}
+                </span>
+              </div>
+
+              <div className="metric-tile">
+                <div className="flex items-center justify-between">
+                  <span className="metric-label">AI Consensus Score</span>
+                  <InfoTooltip text="Measures how strongly the 3 underlying ML algorithms agree with each other." />
+                </div>
+                <span className="metric-value">{Math.round(result.confidence * 100)}%</span>
+                <span className="metric-hint">Model Agreement Level</span>
+              </div>
+            </div>
+
+            {/* Interactive Chart with Tabs */}
+            <div className="card">
+              <div className="card-header flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className={`px-3 py-1 text-xs font-mono font-semibold rounded border transition ${
+                      activeChartTab === 'forecast' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-transparent border-[#2a344d] text-slate-400'
+                    }`}
+                    onClick={() => setActiveChartTab('forecast')}
+                  >
+                    1. Forecast Path &amp; Range
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-3 py-1 text-xs font-mono font-semibold rounded border transition ${
+                      activeChartTab === 'technical' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-transparent border-[#2a344d] text-slate-400'
+                    }`}
+                    onClick={() => setActiveChartTab('technical')}
+                  >
+                    2. Full Technical Chart (SMA, RSI, MACD)
+                  </button>
+                </div>
+                <Badge tone="info">Visual Explanation</Badge>
+              </div>
+
+              <div className="p-3">
+                {activeChartTab === 'forecast' ? (
+                  <ForecastFanChart
+                    data={result.forecast_points}
+                    currentPrice={result.current_price}
+                    asOfDate={result.as_of_date}
+                    historicalBars={ohlcv.data ?? []}
+                  />
+                ) : (
+                  <ComprehensiveTechnicalChart data={ohlcv.data ?? []} />
+                )}
+              </div>
+            </div>
+
+            {/* Best Case vs Worst Case Scenario Cards */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 rounded bg-[#111520] border border-red-950/60">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-semibold text-red-400 uppercase">Worst-Case Drop (Bear)</span>
+                  <InfoTooltip text="If market conditions turn negative, the price is estimated to floor around this level." />
+                </div>
+                <div className="mono text-base font-bold text-red-400 mt-1">{money(result.scenarios.bear.price)}</div>
+                <div className="mono text-xs text-red-400">{pct(result.scenarios.bear.return, true)} (Stop-Loss Level)</div>
+              </div>
+
+              <div className="p-3 rounded bg-[#111520] border border-blue-950/60">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-semibold text-blue-400 uppercase">Expected Base Path</span>
+                  <InfoTooltip text="The most likely target price predicted by the ensemble model." />
+                </div>
+                <div className="mono text-base font-bold text-blue-400 mt-1">{money(result.scenarios.base.price)}</div>
+                <div className="mono text-xs text-blue-400">{pct(result.scenarios.base.return, true)} (Main Target)</div>
+              </div>
+
+              <div className="p-3 rounded bg-[#111520] border border-green-950/60">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-semibold text-green-400 uppercase">Best-Case Jump (Bull)</span>
+                  <InfoTooltip text="If market conditions turn very positive, the price could reach up to this ceiling." />
+                </div>
+                <div className="mono text-base font-bold text-green-400 mt-1">{money(result.scenarios.bull.price)}</div>
+                <div className="mono text-xs text-green-400">{pct(result.scenarios.bull.return, true)} (Profit Target)</div>
+              </div>
+            </div>
+          </div>
+
+          {/* STEP 2: WHY DOES THE MODEL PREDICT THIS */}
+          <div className="space-y-3 pt-2">
+            <h2 className="font-mono text-xs uppercase font-bold text-blue-400 tracking-wider">
+              Step 2: Why Does the Model Expect This? (Key Factor Drivers)
+            </h2>
+
+            <div className="grid lg:grid-cols-2 gap-4">
+              {/* SHAP Factor Explanations */}
+              <Card title="Top Technical Factors" subtitle="What signals pushed the prediction UP or DOWN?">
+                <div className="factor-list">
+                  {result.factors.map((f) => (
+                    <div className="factor-item" key={f.name}>
+                      <span className={`factor-dot ${f.state}`} />
+                      <div className="factor-info">
+                        <div className="flex justify-between gap-2">
+                          <strong>{f.name}</strong>
+                          <span className={`factor-state ${f.state}`}>
+                            {f.state === 'positive' ? '▲ Pushing Up' : f.state === 'negative' ? '▼ Pushing Down' : '● Neutral'}
+                          </span>
+                        </div>
+                        <p>{f.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Technical Indicators Summary */}
+              <Card title="Stock Health Metrics" subtitle="Price levels, volatility, and trading volume">
+                <div className="context-list">
+                  <div className="context-row">
+                    <span className="context-label">Risk Category</span>
+                    <Badge tone={result.market_context.risk_level === 'High' ? 'down' : result.market_context.risk_level === 'Low' ? 'up' : 'neutral'}>
+                      {result.market_context.risk_level} Volatility
+                    </Badge>
+                  </div>
+                  <div className="context-row">
+                    <span className="context-label">
+                      Annualized Volatility <InfoTooltip text="Measures how wildly this stock price swings up and down over a year." />
+                    </span>
+                    <span className="context-value">{pct(result.market_context.annualized_volatility)}</span>
+                  </div>
+                  <div className="context-row">
+                    <span className="context-label">Key Support (Price Floor)</span>
+                    <span className="context-value">{money(result.market_context.support)}</span>
+                  </div>
+                  <div className="context-row">
+                    <span className="context-label">Key Resistance (Price Ceiling)</span>
+                    <span className="context-value">{money(result.market_context.resistance)}</span>
+                  </div>
+                  <div className="context-row">
+                    <span className="context-label">
+                      RSI Index (14 Days) <InfoTooltip text=">70 means stock might be overbought; <30 means oversold." />
+                    </span>
+                    <span className="context-value">{result.market_context.rsi.toFixed(1)}</span>
+                  </div>
+                  <div className="context-row">
+                    <span className="context-label">Volume Relative Ratio</span>
+                    <span className="context-value">{result.market_context.volume_ratio.toFixed(2)}× Average Volume</span>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+
+          {/* STEP 3: HOW RELIABLE IS THIS MODEL */}
+          <div className="space-y-3 pt-2">
+            <h2 className="font-mono text-xs uppercase font-bold text-blue-400 tracking-wider">
+              Step 3: How Reliable Was This Model in Past Tests? (Backtesting)
+            </h2>
+
+            <div className="p-4 rounded bg-[#111520] border border-[#1e2536] flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 style={{ width: 22, height: 22, color: 'var(--green)', flexShrink: 0 }} />
+                <div>
+                  <div className="text-slate-200 font-bold">
+                    Past Accuracy (Hit-Rate): {(result.validation.direction_accuracy * 100).toFixed(1)}% Correct Direction
+                  </div>
+                  <div className="text-slate-400 text-[11px] mt-0.5">
+                    Tested on {result.validation.validation_samples} historical periods the model had never seen before. Average error margin: {result.validation.mae_percent.toFixed(2)}%.
+                  </div>
+                </div>
+              </div>
+
+              <Link to={`/app/track-record?symbol=${result.symbol}&horizon=${result.horizon_days}`} className="btn btn-ghost btn-sm">
+                View Full Accuracy Table →
+              </Link>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
 }

@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 
-const STORAGE_KEY = 'nexus.watchlist.v1'
+const STORAGE_KEY = 'quantvista.watchlist.v1'
 
 export type WatchlistItem = {
   symbol: string

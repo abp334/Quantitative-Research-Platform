@@ -16,7 +16,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "Nexus AI Stock Forecast"
+    app_name: str = "QuantVista NIFTY Intelligence"
     app_version: str = "2.0.0"
     debug: bool = False
     api_prefix: str = "/api/v1"

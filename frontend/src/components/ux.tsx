@@ -11,9 +11,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 
 type Toast = { id: number; message: string; tone?: 'ok' | 'err' }
 
-const ToastCtx = createContext<{ push: (message: string, tone?: 'ok' | 'err') => void } | null>(
-  null,
-)
+const ToastCtx = createContext<{ push: (message: string, tone?: 'ok' | 'err') => void } | null>(null)
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -26,7 +24,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={value}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2 w-80">
+      <div className="toast-container">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div
@@ -34,11 +32,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
-              className={`rounded-xl border px-4 py-3 text-sm shadow-lg glass ${
-                t.tone === 'err'
-                  ? 'border-[rgba(240,113,120,0.4)] text-[var(--color-danger)]'
-                  : 'border-[rgba(61,222,168,0.35)] text-[var(--color-text)]'
-              }`}
+              className={`toast ${t.tone === 'err' ? 'toast-err' : 'toast-ok'}`}
             >
               {t.message}
             </motion.div>
@@ -56,11 +50,7 @@ export function useToast() {
 }
 
 export function Skeleton({ className = '' }: { className?: string }) {
-  return (
-    <div
-      className={`animate-pulse rounded-xl bg-white/5 border border-[var(--color-line)] ${className}`}
-    />
-  )
+  return <div className={`skeleton ${className}`} />
 }
 
 export function PageSkeleton() {
@@ -85,7 +75,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
   render() {
     if (this.state.error) {
       return (
-        <div className="glass rounded-2xl p-6 text-[var(--color-danger)]">
+        <div className="error-box" style={{ padding: '24px' }}>
           Something went wrong: {this.state.error.message}
         </div>
       )

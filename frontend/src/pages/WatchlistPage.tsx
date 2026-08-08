@@ -1,22 +1,21 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, BookOpen, Plus, Star, Trash2 } from 'lucide-react'
+import { ArrowUpRight, BarChart3, Plus, Star, Trash2 } from 'lucide-react'
 import { api } from '../api/client'
 import type { ScannerItem, Stock } from '../types'
 import { Badge, Button, Card, ErrorBox } from '../components/ui'
 import { PageSkeleton } from '../components/ux'
 import { useWatchlist } from '../lib/watchlist'
 
-const money = (value: number) =>
-  `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
-const percent = (value: number, signed = false) =>
-  `${signed && value >= 0 ? '+' : ''}${(value * 100).toFixed(2)}%`
+const money = (v: number) => `₹${v.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+const pct = (v: number, signed = false) => `${signed && v >= 0 ? '+' : ''}${(v * 100).toFixed(2)}%`
 
 export function WatchlistPage() {
   const watchlist = useWatchlist()
   const [candidate, setCandidate] = useState('')
   const [horizon, setHorizon] = useState(5)
+
   const stocks = useQuery<Stock[]>({
     queryKey: ['stocks'],
     queryFn: () => api.stocks() as Promise<Stock[]>,
@@ -45,57 +44,37 @@ export function WatchlistPage() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-5">
-        <div>
-          <div className="eyebrow">
-            <Star className="h-4 w-4" /> Persistent research workspace
-          </div>
-          <h1 className="display text-3xl md:text-5xl font-bold tracking-tight mt-5">
-            Your watchlist
-          </h1>
-          <p className="text-[var(--color-muted)] mt-3 max-w-2xl">
-            Save names you care about, attach a thesis and price level, and monitor their
-            forecast signals together. Everything is stored privately in this browser.
-          </p>
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <div className="page-tag"><Star style={{ width: 14, height: 14 }} /> Watchlist</div>
+          <h1>Research Watchlist</h1>
+          <p className="page-desc">Save stocks, set price targets and thesis notes, and monitor AI forecast signals.</p>
         </div>
         <label>
-          <span className="text-xs text-[var(--color-muted)] block mb-2">Signal horizon</span>
-          <select
-            className="market-input min-w-44"
-            value={horizon}
-            onChange={(event) => setHorizon(Number(event.target.value))}
-          >
+          <span className="form-label">Signal Horizon</span>
+          <select className="form-select" style={{ minWidth: 160 }} value={horizon} onChange={(e) => setHorizon(Number(e.target.value))}>
             <option value={5}>5 sessions</option>
             <option value={10}>10 sessions</option>
             <option value={20}>20 sessions</option>
           </select>
         </label>
-      </section>
+      </div>
 
       <Card>
         <div className="grid md:grid-cols-[1fr_auto] gap-3 items-end">
           <label>
-            <span className="text-xs text-[var(--color-muted)] block mb-2">
-              Add a stock
-            </span>
-            <select
-              className="market-input w-full"
-              value={candidate}
-              onChange={(event) => setCandidate(event.target.value)}
-            >
-              <option value="">Choose from the available universe…</option>
-              {available.map((stock) => (
-                <option key={stock.symbol} value={stock.symbol}>
-                  {stock.symbol}
-                  {stock.company_name ? ` — ${stock.company_name}` : ''}
+            <span className="form-label">Add Stock</span>
+            <select className="form-select" value={candidate} onChange={(e) => setCandidate(e.target.value)}>
+              <option value="">Choose from available NIFTY universe…</option>
+              {available.map((s) => (
+                <option key={s.symbol} value={s.symbol}>
+                  {s.symbol}{s.company_name ? ` — ${s.company_name}` : ''}
                 </option>
               ))}
             </select>
           </label>
           <Button onClick={addCandidate} disabled={!candidate}>
-            <span className="inline-flex items-center gap-2">
-              <Plus className="h-4 w-4" /> Add to watchlist
-            </span>
+            <Plus style={{ width: 14, height: 14 }} /> Add Stock
           </Button>
         </div>
       </Card>
@@ -105,70 +84,49 @@ export function WatchlistPage() {
       {scanner.error && <ErrorBox message={(scanner.error as Error).message} />}
 
       {!stocks.isLoading && watchlist.items.length === 0 && (
-        <section className="forecast-empty">
-          <Star className="h-8 w-8 text-[var(--color-warning)] mx-auto" />
-          <h2 className="display text-2xl font-semibold mt-4">Start a living research list</h2>
-          <p className="text-sm text-[var(--color-muted)] max-w-xl mx-auto mt-2">
-            Add a stock above or use the star button anywhere in Market Pulse, Scanner, or a
-            forecast.
-          </p>
-        </section>
+        <div className="empty-state">
+          <div className="empty-state-icon"><Star style={{ width: 24, height: 24 }} /></div>
+          <h2>Your watchlist is empty</h2>
+          <p>Add stocks above or click the Watch button on any stock forecast card.</p>
+        </div>
       )}
 
       {watchlist.items.length > 0 && (
-        <section className="grid xl:grid-cols-2 gap-5">
+        <div className="grid xl:grid-cols-2 gap-4">
           {watchlist.items.map((saved) => {
             const signal = scannerBySymbol.get(saved.symbol)
-            const thesisDistance =
-              signal && saved.thesisPrice
-                ? saved.thesisPrice / signal.last_price - 1
-                : null
+            const dist = signal && saved.thesisPrice ? saved.thesisPrice / signal.last_price - 1 : null
             return (
-              <article className="watchlist-card" key={saved.symbol}>
+              <div className="watchlist-card" key={saved.symbol}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge tone={(signal?.expected_return ?? 0) >= 0 ? 'up' : 'down'}>
-                        {saved.symbol}
-                      </Badge>
-                      {saved.industry && (
-                        <span className="text-xs text-[var(--color-muted)]">{saved.industry}</span>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <Badge tone={(signal?.expected_return ?? 0) >= 0 ? 'up' : 'down'}>{saved.symbol}</Badge>
+                      {saved.industry && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{saved.industry}</span>}
                     </div>
-                    <h2 className="display text-xl font-semibold mt-3">
+                    <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 600, marginTop: 8 }}>
                       {saved.companyName || saved.symbol}
-                    </h2>
+                    </h3>
                   </div>
-                  <button
-                    type="button"
-                    className="icon-button-danger"
-                    onClick={() => watchlist.remove(saved.symbol)}
-                    title="Remove from watchlist"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <Button variant="danger" size="sm" onClick={() => watchlist.remove(saved.symbol)}>
+                    <Trash2 style={{ width: 14, height: 14 }} />
+                  </Button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5">
+                <div className="grid grid-cols-4 gap-2" style={{ marginTop: 16 }}>
                   <div className="watch-metric">
-                    <span>Last price</span>
+                    <span>Last Price</span>
                     <strong>{signal ? money(signal.last_price) : '—'}</strong>
                   </div>
                   <div className="watch-metric">
                     <span>Expected</span>
-                    <strong
-                      className={
-                        (signal?.expected_return ?? 0) >= 0
-                          ? 'text-[var(--color-accent)]'
-                          : 'text-[var(--color-danger)]'
-                      }
-                    >
-                      {signal ? percent(signal.expected_return, true) : '—'}
+                    <strong className={(signal?.expected_return ?? 0) >= 0 ? 'text-green' : 'text-red'}>
+                      {signal ? pct(signal.expected_return, true) : '—'}
                     </strong>
                   </div>
                   <div className="watch-metric">
-                    <span>P(up)</span>
-                    <strong>{signal ? percent(signal.probability_up) : '—'}</strong>
+                    <span>P(Up)</span>
+                    <strong>{signal ? pct(signal.probability_up) : '—'}</strong>
                   </div>
                   <div className="watch-metric">
                     <span>Score</span>
@@ -176,65 +134,46 @@ export function WatchlistPage() {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-[160px_1fr] gap-3 mt-4">
+                <div className="grid md:grid-cols-[150px_1fr] gap-3" style={{ marginTop: 14 }}>
                   <label>
-                    <span className="text-xs text-[var(--color-muted)] block mb-1.5">
-                      Your thesis price
-                    </span>
+                    <span className="form-label">Target Price</span>
                     <input
-                      className="market-input w-full !pr-3"
+                      className="form-input"
                       type="number"
-                      min="0"
                       step="0.05"
                       value={saved.thesisPrice ?? ''}
                       placeholder="Optional"
-                      onChange={(event) =>
-                        watchlist.update(saved.symbol, {
-                          thesisPrice: event.target.value ? Number(event.target.value) : null,
-                        })
-                      }
+                      onChange={(e) => watchlist.update(saved.symbol, { thesisPrice: e.target.value ? Number(e.target.value) : null })}
                     />
                   </label>
                   <label>
-                    <span className="text-xs text-[var(--color-muted)] block mb-1.5">
-                      Research note
-                    </span>
+                    <span className="form-label">Thesis Note</span>
                     <input
-                      className="market-input w-full !pr-3"
+                      className="form-input"
                       value={saved.note}
-                      placeholder="What would confirm or break your thesis?"
-                      onChange={(event) =>
-                        watchlist.update(saved.symbol, { note: event.target.value })
-                      }
+                      placeholder="What is your thesis or risk trigger?"
+                      onChange={(e) => watchlist.update(saved.symbol, { note: e.target.value })}
                     />
                   </label>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-[var(--color-line)]">
-                  <span className="text-xs text-[var(--color-muted)]">
-                    {thesisDistance == null
-                      ? 'Add a thesis price to track distance from the archive close.'
-                      : `${percent(thesisDistance, true)} from the archive close`}
+                <div className="flex flex-wrap items-center justify-between gap-2" style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)', fontSize: 12 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>
+                    {dist == null ? 'Set a target price to measure distance.' : `${pct(dist, true)} from archive price`}
                   </span>
-                  <div className="flex items-center gap-2">
-                    <Link
-                      to={`/app/market?symbol=${encodeURIComponent(saved.symbol)}`}
-                      className="small-action"
-                    >
-                      <BookOpen className="h-3.5 w-3.5" /> Chart
+                  <div className="flex gap-2">
+                    <Link to={`/app/market?symbol=${saved.symbol}`} className="btn btn-ghost btn-sm">
+                      <BarChart3 style={{ width: 12, height: 12 }} /> Chart
                     </Link>
-                    <Link
-                      to={`/app?symbol=${encodeURIComponent(saved.symbol)}&horizon=${horizon}`}
-                      className="small-action text-[var(--color-accent)]"
-                    >
-                      Forecast <ArrowUpRight className="h-3.5 w-3.5" />
+                    <Link to={`/app?symbol=${saved.symbol}&horizon=${horizon}`} className="btn btn-primary btn-sm">
+                      Forecast <ArrowUpRight style={{ width: 12, height: 12 }} />
                     </Link>
                   </div>
                 </div>
-              </article>
+              </div>
             )
           })}
-        </section>
+        </div>
       )}
     </div>
   )

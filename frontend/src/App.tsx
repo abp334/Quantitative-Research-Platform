@@ -32,6 +32,12 @@ const ForecastLabPage = lazy(() =>
 const WatchlistPage = lazy(() =>
   import('./pages/WatchlistPage').then((module) => ({ default: module.WatchlistPage })),
 )
+const PortfolioSimPage = lazy(() =>
+  import('./pages/PortfolioSimPage').then((module) => ({ default: module.PortfolioSimPage })),
+)
+const RiskRadarPage = lazy(() =>
+  import('./pages/RiskRadarPage').then((module) => ({ default: module.RiskRadarPage })),
+)
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
@@ -43,7 +49,7 @@ export default function App() {
       <ToastProvider>
         <WatchlistProvider>
           <BrowserRouter>
-            <Suspense fallback={<div className="route-loader">Loading workspace…</div>}>
+            <Suspense fallback={<div className="route-loader">Loading QuantVista workspace…</div>}>
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/app" element={<AppLayout />}>
@@ -53,6 +59,8 @@ export default function App() {
                   <Route path="compare" element={<ComparePage />} />
                   <Route path="lab" element={<ForecastLabPage />} />
                   <Route path="market" element={<DataExplorerPage />} />
+                  <Route path="portfolio" element={<PortfolioSimPage />} />
+                  <Route path="risk-radar" element={<RiskRadarPage />} />
                   <Route path="watchlist" element={<WatchlistPage />} />
                   <Route path="track-record" element={<TrackRecordPage />} />
                   <Route path="*" element={<Navigate to="/app" replace />} />

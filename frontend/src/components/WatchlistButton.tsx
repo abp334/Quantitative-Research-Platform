@@ -20,7 +20,7 @@ export function WatchlistButton({
   const toggle = () => {
     const added = watchlist.toggle(stock)
     toast.push(
-      added ? `${stock.symbol} added to your watchlist` : `${stock.symbol} removed from watchlist`,
+      added ? `${stock.symbol} added to watchlist` : `${stock.symbol} removed`,
     )
   }
 
@@ -30,14 +30,11 @@ export function WatchlistButton({
       onClick={toggle}
       title={active ? 'Remove from watchlist' : 'Add to watchlist'}
       aria-pressed={active}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl border transition ${
-        active
-          ? 'border-[rgba(230,184,77,.4)] bg-[rgba(230,184,77,.1)] text-[var(--color-warning)]'
-          : 'border-[var(--color-line)] bg-white/[.035] text-[var(--color-muted)] hover:text-white hover:bg-white/[.06]'
-      } ${compact ? 'h-9 w-9' : 'px-3.5 py-2.5 text-sm'}`}
+      className={`btn btn-icon ${active ? 'btn-ghost' : 'btn-ghost'}`}
+      style={active ? { color: 'var(--amber)', borderColor: 'rgba(245,158,11,0.3)' } : undefined}
     >
-      <Star className={`h-4 w-4 ${active ? 'fill-current' : ''}`} />
-      {!compact && (active ? 'Watching' : 'Watch')}
+      <Star style={{ width: 16, height: 16, fill: active ? 'currentColor' : 'none' }} />
+      {!compact && <span style={{ fontSize: 13 }}>{active ? 'Watching' : 'Watch'}</span>}
     </button>
   )
 }
